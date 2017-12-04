@@ -1,5 +1,5 @@
-library(tidyverse)
 library(lubridate)
+library(tidyverse)
 
 df <- read_csv("data/guns.csv")
 df
@@ -31,7 +31,7 @@ ggplot(tallies, aes(Year, number, colour = victim_type)) +
   scale_x_continuous(breaks = seq(min(tallies$Year),
                                   max(tallies$Year),
                                   5)) +
-  ggtitle("US mass shootings per year",) + 
+  ggtitle("US mass shootings per year") + 
   theme(plot.title = element_text(lineheight=.8, face="bold", size = 20)) +
   ylab("Number of victims (fatalities + injuries)")
 
@@ -77,12 +77,13 @@ for(i in 1:length(df$Date)){
 # }
 # 
 # date_array[, 3] <- map_chr(as_vector(date_array[, 3]), fix_year)
-Date <- date()
+Date <- vector()
 for (i in 1:nrow(date_array)) {
   Date[i] <- str_c(date_array[i, ], collapse = '-')
 }
 Date
 df$Date2 <- mdy(Date)
+# df$Date2 <- as.Date(Date, format = "%m-%d-%y")
 
 df %>% 
   select(Date2, Fatalities) %>% 
@@ -92,8 +93,6 @@ df %>%
   theme(plot.title = element_text(lineheight=.8, face="bold", size = 20)) +
   ylab("Number of fatalities") +
   xlab("Date") 
-names(df)                     
-table(df$`Where obtained`)
 
 df %>% 
   mutate(month = month(Date2),
@@ -107,3 +106,43 @@ df %>%
   scale_x_continuous(breaks = seq(min(df$Year),
                                   max(df$Year),
                                   5))
+
+names(df)
+table(df$`Prior signs of mental health issues`)
+
+# Looking at mental health ------------------------------------------------
+
+
+mental_health = logical(length = nrow(df))
+for(i in 1:length(df$`Prior signs of mental health issues`)) {
+  if (df$`Prior signs of mental health issues`[i] == "Yes"){
+    mental_health[i] <- TRUE
+  } else {
+    mental_health[i] <- FALSE
+  }
+}
+df$mental_health <- mental_health
+
+df %>% 
+  select(Date2, Fatalities, mental_health) %>% 
+  ggplot(aes(Date2, Fatalities, color = mental_health)) +
+  geom_point(size = 3)
+
+df %>% 
+  select(Fatalities, mental_health) %>% 
+  ggplot(aes(mental_health, Fatalities)) +
+  geom_boxplot() +
+  ylim(0, 20)
+
+df %>% 
+  select(mental_health, Fatalities, Injured) %>% 
+  mutate(victims = Fatalities + Injured) %>% 
+  ggplot(aes(mental_health, victims)) +
+  geom_boxplot() +
+  ylim(0, 50)
+
+df %>% 
+  select(`Prior signs of mental health issues`, Fatalities, Injured) %>% 
+  mutate(victims = Fatalities + Injured) %>% 
+  ggplot(aes(`Prior signs of mental health issues`, victims)) +
+  geom_boxplot()
